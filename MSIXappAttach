@@ -1,0 +1,113 @@
+
+
+## ✅ One-Step MSIX App Attach VHDX Creation
+
+Run this in an **elevated PowerShell** on your packaging VM:
+
+```powershell
+msixmgr.exe `
+  -Unpack `
+  -packagePath "C:\msix\myapp.msix" `
+  -destination "C:\msix\myapp.vhdx" `
+  -applyACLs `
+  -create `
+  -fileType vhdx `
+  -rootDirectory apps
+```
+
+---
+
+## What Each Parameter Does
+
+|Switch|Purpose|
+|---|---|
+|`-Unpack`|Extracts the MSIX contents|
+|`-packagePath`|Path to your signed MSIX|
+|`-destination`|Output VHDX path|
+|`-applyACLs`|Applies correct ACLs for App Attach|
+|`-create`|Tells msixmgr to _make_ the VHDX instead of just unpacking|
+|`-fileType vhdx`|Generates a VHDX (not VHD)|
+|`-rootDirectory apps`|Puts the extracted package content under an “apps” folder inside the VHDX|
+
+---
+
+## Result
+
+You will end up with:
+
+```
+C:\msix\myapp.vhdx
+```
+
+Inside the VHDX, the structure will be:
+
+```
+\apps\
+    AppxManifest.xml
+    VFS\
+    ...
+```
+
+This is the **required layout for AVD App Attach**.
+
+---
+
+## Upload to Azure Files
+
+Upload the generated `.vhdx` to a file share. For example:
+
+```
+\\<storageaccount>.file.core.windows.net\msix\
+```
+
+Ensure:
+
+- **Session hosts have SMB access** to that share
+    
+- **Certificates are trusted on session hosts**
+    
+- **Host pool is pooled (required for App Attach)**
+![[Host Roles for App Attach.png]]
+    
+
+---
+
+## Register It in Azure Virtual Desktop
+
+In the Azure Portal:
+
+1. Go to **Azure Virtual Desktop → Host Pools**
+    
+2. Select your host pool
+    
+3. Choose **MSIX packages**
+    
+4. Click **Add**
+    
+5. Enter the **UNC path to the VHDX**
+    
+6. Choose **Stage**
+    
+7. Choose **Register**
+    
+
+---
+
+## Important Notes
+
+- The `-rootDirectory apps` switch is required for App Attach to map applications correctly.
+    
+- The `.vhdx` must be accessible by session hosts.
+    
+- Signed MSIX + trusted certificate = required for App Attach.
+    
+
+---
+
+If you want next, I can provide:
+
+- The **best practice file share NTFS + Azure RBAC permissions**
+    
+- A **whiteboard diagram of App Attach staging vs registration**
+    
+- A **troubleshooting guide** if staging or publishing fails
